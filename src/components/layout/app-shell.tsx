@@ -8,17 +8,20 @@ import { Topbar } from "./topbar";
 import { MfaBanner } from "./mfa-banner";
 import { useMe } from "@/hooks/use-me";
 import { useNotificationStream } from "@/hooks/use-notification-stream";
-import { useStoredFlag } from "@/hooks/use-local-storage";
 import { cn } from "@/lib/cn";
 
-const KEY = "summit.sidebar.collapsed";
+export const SIDEBAR_COOKIE = "summit.sidebar.collapsed";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({ children, defaultCollapsed = false }: { children: React.ReactNode; defaultCollapsed?: boolean }) {
   const router = useRouter();
   const { data: me } = useMe();
-  const [collapsed, setCollapsed] = useStoredFlag(KEY);
+  const [collapsed, setCollapsed] = React.useState(defaultCollapsed);
   const [drawer, setDrawer] = React.useState(false);
-  const toggle = () => setCollapsed(!collapsed);
+  const toggle = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    document.cookie = `${SIDEBAR_COOKIE}=${next ? "1" : "0"}; path=/; max-age=31536000; samesite=lax`;
+  };
   useNotificationStream(!!me, (link) => router.push(link));
 
   return (

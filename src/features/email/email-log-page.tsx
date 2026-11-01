@@ -52,7 +52,7 @@ export function EmailLogPage() {
   return (
     <>
       <PageHeader title="Email delivery" description="Every email the system sends, with its delivery state. Temporary failures retry automatically." />
-      <Card className="mb-4 space-y-3 p-4">
+      <Card className="mb-4 space-y-5 p-4">
         <div className="grid gap-3 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
           <Input value={search} onChange={(e) => setSearch(e.target.value)} icon={<Search />} placeholder="Search by recipient email" aria-label="Search recipient" />
           <Select aria-label="Email type" value={state.kind} onChange={(e) => set({ kind: e.target.value })}>
@@ -67,22 +67,22 @@ export function EmailLogPage() {
       <Card>
         {isLoading ? <div className="space-y-2 p-4">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-14" />)}</div>
           : !data?.items.length ? <EmptyState icon={<Mail />} title="No emails found" description="Try a different filter." />
-          : (<>
-            <TableWrap><Table>
-              <thead><tr><Th>Recipient</Th><Th>Email</Th><Th>Status</Th><Th>Attempts</Th><Th>Application</Th><Th>When</Th>{canRetry && <Th className="text-right">Action</Th>}</tr></thead>
-              <tbody>{data.items.map((l) => (
-                <Tr key={l.id}>
-                  <Td><p className="max-w-55 truncate font-medium">{l.to_name ?? l.to_email}</p>{l.to_name && <p className="max-w-55 truncate text-xs text-muted-foreground">{l.to_email}</p>}</Td>
-                  <Td><p className="text-[13px]">{humanize(l.kind)}</p><p className="max-w-60 truncate text-xs text-muted-foreground">{l.subject}</p></Td>
-                  <Td><EmailStateBadge value={l.status} />{l.last_error && <p className="mt-1 max-w-65 truncate text-[11px] text-danger" title={l.last_error}>{l.last_error}</p>}</Td>
-                  <Td className="tabular">{l.attempts}/{l.max_attempts}</Td>
-                  <Td>{l.application_reference ? <Link href={`/applications/${l.application_reference}`} className="font-mono text-xs text-primary hover:underline">{l.application_reference}</Link> : <span className="text-muted-foreground">—</span>}</Td>
-                  <Td className="whitespace-nowrap text-[13px]" ><span title={formatDateTime(l.created_at)}>{timeAgo(l.sent_at ?? l.created_at)}</span></Td>
-                  {canRetry && <Td className="text-right">{(l.status === "dead" || l.status === "failed") && l.retryable ? <Button size="sm" variant="outline" onClick={() => doRetry(l)} loading={retry.isPending && retry.variables === l.id}><RotateCw className="size-4" />Retry</Button> : null}</Td>}
-                </Tr>))}</tbody>
-            </Table></TableWrap>
-            <Pagination pagination={data.pagination} onPage={(p) => set({ page: String(p) })} onPageSize={(n) => set({ page_size: String(n) })} />
-          </>)}
+            : (<>
+              <TableWrap><Table>
+                <thead><tr><Th>Recipient</Th><Th>Email</Th><Th>Status</Th><Th>Attempts</Th><Th>Application</Th><Th>When</Th>{canRetry && <Th className="text-right">Action</Th>}</tr></thead>
+                <tbody>{data.items.map((l) => (
+                  <Tr key={l.id}>
+                    <Td><p className="max-w-55 truncate font-medium">{l.to_name ?? l.to_email}</p>{l.to_name && <p className="max-w-55 truncate text-xs text-muted-foreground">{l.to_email}</p>}</Td>
+                    <Td><p className="text-[13px]">{humanize(l.kind)}</p><p className="max-w-60 truncate text-xs text-muted-foreground">{l.subject}</p></Td>
+                    <Td><EmailStateBadge value={l.status} />{l.last_error && <p className="mt-1 max-w-65 truncate text-[11px] text-danger" title={l.last_error}>{l.last_error}</p>}</Td>
+                    <Td className="tabular">{l.attempts}/{l.max_attempts}</Td>
+                    <Td>{l.application_reference ? <Link href={`/applications/${l.application_reference}`} className="font-mono text-xs text-primary hover:underline">{l.application_reference}</Link> : <span className="text-muted-foreground">—</span>}</Td>
+                    <Td className="whitespace-nowrap text-[13px]" ><span title={formatDateTime(l.created_at)}>{timeAgo(l.sent_at ?? l.created_at)}</span></Td>
+                    {canRetry && <Td className="text-right">{(l.status === "dead" || l.status === "failed") && l.retryable ? <Button size="sm" variant="outline" onClick={() => doRetry(l)} loading={retry.isPending && retry.variables === l.id}><RotateCw className="size-4" />Retry</Button> : null}</Td>}
+                  </Tr>))}</tbody>
+              </Table></TableWrap>
+              <Pagination pagination={data.pagination} onPage={(p) => set({ page: String(p) })} onPageSize={(n) => set({ page_size: String(n) })} />
+            </>)}
       </Card>
     </>
   );

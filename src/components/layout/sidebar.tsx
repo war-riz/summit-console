@@ -23,9 +23,9 @@ export function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProps) {
   const badges = { pending: pending.data?.pagination.total_items ?? 0, unread: unread.data ?? 0, security: me && !me.mfa_enabled ? 1 : 0 };
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden bg-linear-to-b from-sidebar to-sidebar-deep text-sidebar-foreground">
+    <div className="relative flex h-full flex-col overflow-hidden border-r border-sidebar-border bg-linear-to-b from-sidebar to-sidebar-deep text-sidebar-foreground">
       <div aria-hidden className="pointer-events-none absolute -left-24 -top-24 size-72 rounded-full bg-brand-sky/20 blur-3xl" />
-      <div className={cn("relative flex h-16 shrink-0 items-center gap-3 border-b border-white/10 px-4", collapsed && "justify-center px-0")}>
+      <div className={cn("relative flex h-16 shrink-0 items-center gap-3 border-b border-sidebar-border px-4", collapsed && "justify-center px-0")}>
         <BrandMark className="size-9" />
         {!collapsed && (<div className="min-w-0 leading-tight"><p className="truncate text-[15px] font-semibold">{APP_NAME}</p><p className="truncate text-[11px] text-sidebar-muted">D-OLF Hydrometric</p></div>)}
       </div>
@@ -46,7 +46,7 @@ export function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProps) {
                     <li key={href}>
                       <Link href={href} onClick={onNavigate} title={collapsed ? label : undefined} aria-current={active ? "page" : undefined}
                         className={cn("group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors", collapsed && "justify-center px-0",
-                          active ? "bg-sidebar-active text-white shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]" : "text-sidebar-muted hover:bg-white/6 hover:text-white")}>
+                          active ? "bg-sidebar-active text-sidebar-active-foreground shadow-[inset_0_0_0_1px_var(--sidebar-border)]" : "text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-foreground")}>
                         {active && <span className="absolute -left-3 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-brand-sky" />}
                         <Icon className="size-4.5 shrink-0" />
                         {!collapsed && <span className="flex-1 truncate">{label}</span>}
@@ -67,16 +67,16 @@ export function Sidebar({ collapsed, onToggle, onNavigate }: SidebarProps) {
         })}
       </nav>
 
-      <div className="relative shrink-0 border-t border-white/10 p-3">
+      <div className="relative shrink-0 border-t border-sidebar-border p-3">
         {me && (
-          <div className={cn("flex items-center gap-3 rounded-xl bg-white/6 p-2.5", collapsed && "justify-center bg-transparent p-0")}>
+          <div className={cn("flex items-center gap-3 rounded-xl bg-sidebar-hover p-2.5", collapsed && "justify-center bg-transparent p-0")}>
             <Avatar name={me.name} size="md" />
             {!collapsed && (<div className="min-w-0 leading-tight"><p className="truncate text-[13px] font-medium">{me.name}</p><p className="truncate text-[11px] capitalize text-sidebar-muted">{me.role.replace("_", " ")}</p></div>)}
           </div>
         )}
         {onToggle && (
           <button onClick={onToggle} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className={cn("mt-2 hidden w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-sidebar-muted transition-colors hover:bg-white/6 hover:text-white lg:flex", collapsed && "justify-center px-0")}>
+            className={cn("mt-2 hidden w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-sidebar-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-foreground lg:flex", collapsed && "justify-center px-0")}>
             {collapsed ? <PanelLeftOpen className="size-4" /> : <><PanelLeftClose className="size-4" />Collapse</>}
           </button>
         )}

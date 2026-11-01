@@ -23,7 +23,7 @@ export function Card({ className, spotlight, padded, children, onMouseMove, ...p
         <div aria-hidden className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover/card:opacity-100"
           style={{ background: "radial-gradient(260px circle at var(--x,50%) var(--y,50%), color-mix(in srgb, var(--brand-sky) 16%, transparent), transparent 70%)" }} />
       )}
-      <div className="relative">{children}</div>
+      {spotlight ? <div className="relative">{children}</div> : children}
     </div>
   );
 }
