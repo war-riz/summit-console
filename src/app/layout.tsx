@@ -5,10 +5,27 @@ import { Providers } from "@/providers";
 import { APP_NAME, EVENT_NAME } from "@/lib/constants";
 import "./globals.css";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const DESCRIPTION = `${EVENT_NAME}: internal management console`;
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: { default: APP_NAME, template: `%s · ${APP_NAME}` },
-  description: `${EVENT_NAME}: internal management console`,
+  description: DESCRIPTION,
   robots: { index: false, follow: false },
+  openGraph: {
+    type: "website",
+    siteName: APP_NAME,
+    title: APP_NAME,
+    description: DESCRIPTION,
+    images: [{ url: "/dolf-logo.jpg", alt: "D-OLF Hydrometric" }],
+  },
+  twitter: {
+    card: "summary",
+    title: APP_NAME,
+    description: DESCRIPTION,
+    images: ["/dolf-logo.jpg"],
+  },
 };
 export const viewport: Viewport = {
   themeColor: [{ media: "(prefers-color-scheme: light)", color: "#f4f6fb" }, { media: "(prefers-color-scheme: dark)", color: "#080b22" }],
