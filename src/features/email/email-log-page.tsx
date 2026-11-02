@@ -57,7 +57,7 @@ export function EmailLogPage() {
           <Input value={search} onChange={(e) => setSearch(e.target.value)} icon={<Search />} placeholder="Search by recipient email" aria-label="Search recipient" />
           <Select aria-label="Email type" value={state.kind} onChange={(e) => set({ kind: e.target.value })}>
             <option value="">All email types</option><option value="application_received">Receipt confirmation</option><option value="application_accepted">Acceptance</option><option value="application_rejected">Rejection</option>
-            <option value="admin_welcome">Admin welcome</option><option value="password_reset">Password reset</option><option value="password_changed">Password changed</option>
+            <option value="entry_pass">Entry pass</option><option value="admin_welcome">Admin welcome</option><option value="password_reset">Password reset</option><option value="password_changed">Password changed</option>
           </Select>
         </div>
         <Tabs value={state.status || "all"} onChange={(v) => set({ status: v === "all" ? "" : v })}

@@ -16,7 +16,6 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
 }
 
 export function TrendChart({ data }: { data: Point[] }) {
-  const step = data.length > 31 ? 7 : data.length > 14 ? 3 : 1;
   return (
     <div className="h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -26,7 +25,7 @@ export function TrendChart({ data }: { data: Point[] }) {
             <linearGradient id="g-sponsors" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6d5cf0" stopOpacity={0.4} /><stop offset="100%" stopColor="#6d5cf0" stopOpacity={0.02} /></linearGradient>
           </defs>
           <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 4" />
-          <XAxis dataKey="date" tickFormatter={formatDayMonth} tickLine={false} axisLine={false} interval={step - 1} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} />
+                    <XAxis dataKey="date" tickFormatter={formatDayMonth} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={32} tickMargin={8} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} />
           <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} />
           <Tooltip content={<ChartTooltip />} cursor={{ stroke: "var(--border)", strokeWidth: 1.5 }} />
           <Area type="monotone" dataKey="members" name="Members" stackId="1" stroke="var(--brand-sky)" strokeWidth={2.5} fill="url(#g-members)" />

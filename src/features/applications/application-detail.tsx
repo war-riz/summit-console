@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Building2, CheckCircle2, ExternalLink, FileSearch, Globe, Mail, MapPin, Phone, RotateCw, Send, StickyNote, User, XCircle } from "lucide-react";
+import { Building2, CheckCircle2, ExternalLink, FileSearch, Globe, Mail, MapPin, Phone, QrCode, RotateCw, Send, StickyNote, User, XCircle } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Banner } from "@/components/ui/banner";
@@ -43,6 +43,7 @@ export function ApplicationDetailView({ reference }: { reference: string }) {
   const canAudit = useCan("audit:read").allowed;
   const canNote = useCan("applications:note").allowed;
   const canRetry = useCan("email_logs:retry").allowed;
+  const canDecide = useCan("applications:decide").allowed;
   const decide = useDecide(reference);
 
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-28" /><div className="grid gap-4 lg:grid-cols-3"><Skeleton className="h-96 lg:col-span-2" /><Skeleton className="h-96" /></div></div>;
@@ -129,6 +130,7 @@ export function ApplicationDetailView({ reference }: { reference: string }) {
                 {app.decision_note && <div className="rounded-xl bg-muted/60 p-3 text-[13px]"><p className="mb-0.5 text-xs font-medium text-muted-foreground">Internal note</p>{app.decision_note}</div>}
               </>) : <p className="text-[13px] text-muted-foreground">Waiting for a decision. The applicant gets an email as soon as you accept or reject.</p>}
             </CardContent></Card>
+          {app.status === "accepted" && <AttendanceCard app={app} canResend={canDecide} />}
           <EmailPanel reference={reference} canRetry={canRetry} />
           {canAudit && <Timeline reference={reference} />}
         </div>
@@ -201,6 +203,22 @@ function Timeline({ reference }: { reference: string }) {
                 <div className="min-w-0 pt-0.5"><p className="text-[13px] leading-snug">{text}</p><p className="text-[11px] text-muted-foreground" title={formatDateTime(e.created_at)}>{timeAgo(e.created_at)}</p></div></li>); })}
           </ol>
         )}
+      </CardContent></Card>
+  );
+}
+
+function AttendanceCard({ app, canResend }: { app: ApplicationDetail; canResend: boolean }) {
+  const days = Object.entries(app.check_ins ?? {}).sort(([a], [b]) => a.localeCompare(b));
+  const resend = useMutation({ mutationFn: () => api.post(`/admin/checkin/${app.reference}/resend-pass`) });
+  return (
+    <Card><CardHeader><div><CardTitle>Entry pass &amp; attendance</CardTitle><CardDescription>QR pass is in the acceptance email</CardDescription></div><QrCode className="size-4 text-muted-foreground" /></CardHeader>
+      <CardContent className="space-y-3">
+        {days.length === 0 ? <p className="text-[13px] text-muted-foreground">Not checked in yet.</p> : (
+          <ul className="space-y-2">{days.map(([day, c]) => (
+            <li key={day} className="flex items-center justify-between rounded-xl bg-success-soft px-3 py-2 text-[13px]"><span className="font-medium text-success">{day}</span><span className="text-muted-foreground">{formatDateTime(c.at)}{c.by_name ? ` · ${c.by_name}` : ""}</span></li>))}</ul>
+        )}
+        {canResend && <Button variant="outline" size="sm" className="w-full" loading={resend.isPending}
+          onClick={async () => { try { await resend.mutateAsync(); toast.success("Entry pass emailed again"); } catch (e) { toast.error((e as ApiError).message); } }}><Send className="size-4" />Email entry pass again</Button>}
       </CardContent></Card>
   );
 }

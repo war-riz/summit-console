@@ -30,7 +30,11 @@ export function DashboardPage() {
   const router = useRouter();
   const { data: me } = useMe();
   const [days, setDays] = React.useState(14);
-  const { data, isLoading, isError, isFetching, refetch } = useDashboardStats(days);
+  const allowed = !!me?.permissions.includes("dashboard:read");
+  const { data, isLoading, isError, isFetching, refetch } = useDashboardStats(days, allowed);
+  React.useEffect(() => { // event-day volunteers have no dashboard: send them to their own page
+    if (me && !allowed) router.replace(me.permissions.includes("checkin:operate") ? "/check-in" : "/security");
+  }, [me, allowed, router]);
   const canSeeApps = !!me?.permissions.includes("applications:read");
   const first = me?.name.split(" ")[0] ?? "";
 

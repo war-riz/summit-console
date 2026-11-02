@@ -1,7 +1,7 @@
 // Hand-written mirror of the backend response models (see the API's /developer-docs).
 export type Category = "member" | "sponsor";
 export type Status = "pending" | "accepted" | "rejected";
-export type Role = "super_admin" | "admin" | "viewer";
+export type Role = "super_admin" | "admin" | "viewer" | "gate_staff";
 export type EmailState = "queued" | "sending" | "sent" | "failed" | "dead";
 export type Decision = "accept" | "reject";
 
@@ -31,7 +31,8 @@ export interface ApplicationNote { id: string; author_id: string; author_name: s
 export interface ApplicationDetail extends ApplicationSummary {
   job_title: string | null; website: string | null; sponsorship_interest: string | null; message: string | null; how_did_you_hear: string | null;
   additional_answers: Record<string, string>; consent_accepted_at: string | null; decided_by_id: string | null; decision_note: string | null;
-  decision_version: number; notes: ApplicationNote[]; updated_at: string | null; available_actions: Decision[];
+  decision_version: number; check_ins: Record<string, { at: string; by_name?: string; method?: string }>; notes: ApplicationNote[]; 
+  updated_at: string | null; available_actions: Decision[];
 }
 export interface BulkResult { succeeded: string[]; failed: { reference: string; code: string; message: string }[] }
 
@@ -59,4 +60,11 @@ export type NotificationSeverity = "info" | "success" | "warning" | "critical";
 export interface AppNotification {
   id: string; type: string; severity: NotificationSeverity; title: string; body: string; link: string | null; data: Record<string, unknown>;
   is_read: boolean; created_at: string; read_at: string | null;
+}
+export interface Attendee { reference: string; applicant_name: string; category: Category; organisation: string | null; job_title: string | null; checked_in_at: string | null }
+export interface CheckinResult { attendee: Attendee; day: string; method: "scan" | "manual" }
+export interface CheckinStats {
+  day: string; expected: number; checked_in: number; remaining: number; by_category: Record<string, { expected: number; checked_in: number }>;
+  per_day: { day: string; checked_in: number }[];
+  recent: { reference: string; applicant_name: string; category: Category; checked_in_at: string; checked_in_by_name: string | null; method: string }[];
 }

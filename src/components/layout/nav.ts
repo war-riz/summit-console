@@ -1,4 +1,4 @@
-import { Bell, Building2, LayoutDashboard, Mail, ScrollText, ShieldCheck, Users, type LucideIcon } from "lucide-react";
+import { Bell, Building2, LayoutDashboard, Mail, ScrollText, ShieldCheck, Users, QrCode, type LucideIcon } from "lucide-react";
 
 export interface NavItem { href: string; label: string; icon: LucideIcon; permission?: string; badge?: "pending" | "unread" | "security" }
 export interface NavSection { label: string; items: NavItem[] }
@@ -7,6 +7,7 @@ export const NAV: NavSection[] = [
   { label: "Overview", items: [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/applications", label: "Applications", icon: Building2, permission: "applications:read", badge: "pending" },
+    { href: "/check-in", label: "Check-in", icon: QrCode, permission: "checkin:operate" },
     { href: "/notifications", label: "Notifications", icon: Bell, badge: "unread" },
   ] },
   { label: "Monitoring", items: [

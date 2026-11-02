@@ -30,11 +30,12 @@ import { formatDate, formatDateTime, timeAgo } from "@/lib/format";
 
 const ROLES: { value: Role; label: string; help: string }[] = [
   { value: "viewer", label: "Viewer", help: "Read-only access to applications and email status." },
+  { value: "gate_staff", label: "Gate staff", help: "Event-day volunteer: can only scan entry passes and check people in." },
   { value: "admin", label: "Admin", help: "Can also decide, add notes, export CSV, retry emails and view the audit log." },
   { value: "super_admin", label: "Super admin", help: "Everything an admin can do, plus manage administrators." },
 ];
-const roleTone = { super_admin: "navy", admin: "info", viewer: "neutral" } as const;
-const schema = z.object({ name: z.string().min(2, "Enter the full name"), email: z.string().email("Enter a valid email address"), role: z.enum(["viewer", "admin", "super_admin"]) });
+const roleTone = { super_admin: "navy", admin: "info", viewer: "neutral", gate_staff: "warning" } as const;
+const schema = z.object({ name: z.string().min(2, "Enter the full name"), email: z.string().email("Enter a valid email address"), role: z.enum(["viewer", "gate_staff", "admin", "super_admin"]) });
 type Form = z.infer<typeof schema>;
 
 export function AdministratorsPage() {
