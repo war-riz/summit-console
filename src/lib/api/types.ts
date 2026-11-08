@@ -64,7 +64,7 @@ export interface AppNotification {
 export interface Attendee { reference: string; applicant_name: string; category: Category; organisation: string | null; job_title: string | null; checked_in_at: string | null }
 export interface CheckinResult { attendee: Attendee; day: string; method: "scan" | "manual" }
 export interface CheckinStats {
-  day: string; expected: number; checked_in: number; remaining: number; by_category: Record<string, { expected: number; checked_in: number }>;
+  mode: "daily" | "event"; day: string; expected: number; checked_in: number; remaining: number; by_category: Record<string, { expected: number; checked_in: number }>;
   per_day: { day: string; checked_in: number }[];
   recent: { reference: string; applicant_name: string; category: Category; checked_in_at: string; checked_in_by_name: string | null; method: string }[];
 }

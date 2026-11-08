@@ -4,7 +4,8 @@ import * as React from "react";
 import Link from "next/link";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Mail, RotateCw, Search } from "lucide-react";
+import { ChevronDown, Mail, RotateCw, Search, Trash2 } from "lucide-react";
+import { DropdownContent, DropdownItem, DropdownMenu, DropdownTrigger } from "@/components/ui/dropdown-menu";
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -31,6 +32,7 @@ export function EmailLogPage() {
   const qc = useQueryClient();
   const confirm = useConfirm();
   const canRetry = useCan("email_logs:retry").allowed;
+  const canDelete = useCan("data:delete").allowed;
   const { state, set } = useUrlState(DEFAULTS);
   const [search, setSearch] = React.useState(state.q);
   const debounced = useDebounce(search, 400);
@@ -41,6 +43,22 @@ export function EmailLogPage() {
     queryFn: ({ signal }) => api.page<EmailLog>("/admin/email-logs", query, signal),
   });
   const retry = useMutation({ mutationFn: (id: string) => api.post<EmailLog>(`/admin/email-logs/${id}/retry`), onSuccess: () => qc.invalidateQueries({ queryKey: ["email-logs"] }) });
+  const del = useMutation({ mutationFn: (id: string) => api.delete(`/admin/email-logs/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ["email-logs"] }) });
+  const purge = useMutation({
+    mutationFn: (v: { status: "sent" | "dead"; days: number }) => api.delete<{ deleted: number }>("/admin/email-logs", { status: v.status, older_than_days: v.days }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["email-logs"] }),
+  });
+
+  const removeLog = async (log: EmailLog) => {
+    const { confirmed } = await confirm({ title: "Delete this email log?", description: `${humanize(log.kind)} to ${log.to_email}. The email itself is not affected.`, tone: "danger", confirmLabel: "Delete" });
+    if (!confirmed) return;
+    try { await del.mutateAsync(log.id); toast.success("Email log deleted"); } catch (e) { toast.error((e as ApiError).message); }
+  };
+  const cleanUp = async (status: "sent" | "dead", days: number) => {
+    const { confirmed } = await confirm({ title: `Delete ${status === "sent" ? "sent" : "failed"} email logs older than ${days} days?`, description: "Queued and retrying emails are never touched. This cannot be undone.", tone: "danger", confirmLabel: "Delete" });
+    if (!confirmed) return;
+    try { const r = await purge.mutateAsync({ status, days }); toast.success(`${r.deleted} email log${r.deleted === 1 ? "" : "s"} deleted`); } catch (e) { toast.error((e as ApiError).message); }
+  };
 
   const doRetry = async (log: EmailLog) => {
     const { confirmed } = await confirm({ title: "Retry this email?", description: `${humanize(log.kind)} to ${log.to_email}. Already-delivered emails can never be re-sent, so there is no risk of a duplicate.`, confirmLabel: "Retry now" });
@@ -51,7 +69,14 @@ export function EmailLogPage() {
 
   return (
     <>
-      <PageHeader title="Email delivery" description="Every email the system sends, with its delivery state. Temporary failures retry automatically." />
+      <PageHeader title="Email delivery" description="Every email the system sends, with its delivery state. Temporary failures retry automatically."
+        actions={canDelete && (
+          <DropdownMenu><DropdownTrigger asChild><Button variant="outline" loading={purge.isPending}><Trash2 className="size-4" />Clean up<ChevronDown className="size-4" /></Button></DropdownTrigger>
+            <DropdownContent>
+              <DropdownItem onSelect={() => cleanUp("sent", 30)}>Delete sent logs older than 30 days</DropdownItem>
+              <DropdownItem onSelect={() => cleanUp("sent", 90)}>Delete sent logs older than 90 days</DropdownItem>
+              <DropdownItem danger onSelect={() => cleanUp("dead", 30)}>Delete failed logs older than 30 days</DropdownItem>
+            </DropdownContent></DropdownMenu>)} />
       <Card className="mb-4 space-y-5 p-4">
         <div className="grid gap-3 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
           <Input value={search} onChange={(e) => setSearch(e.target.value)} icon={<Search />} placeholder="Search by recipient email" aria-label="Search recipient" />
@@ -69,7 +94,7 @@ export function EmailLogPage() {
           : !data?.items.length ? <EmptyState icon={<Mail />} title="No emails found" description="Try a different filter." />
             : (<>
               <TableWrap><Table>
-                <thead><tr><Th>Recipient</Th><Th>Email</Th><Th>Status</Th><Th>Attempts</Th><Th>Application</Th><Th>When</Th>{canRetry && <Th className="text-right">Action</Th>}</tr></thead>
+                <thead><tr><Th>Recipient</Th><Th>Email</Th><Th>Status</Th><Th>Attempts</Th><Th>Application</Th><Th>When</Th>{(canRetry || canDelete) && <Th className="text-right">Action</Th>}</tr></thead>
                 <tbody>{data.items.map((l) => (
                   <Tr key={l.id}>
                     <Td><p className="max-w-55 truncate font-medium">{l.to_name ?? l.to_email}</p>{l.to_name && <p className="max-w-55 truncate text-xs text-muted-foreground">{l.to_email}</p>}</Td>
@@ -78,7 +103,10 @@ export function EmailLogPage() {
                     <Td className="tabular">{l.attempts}/{l.max_attempts}</Td>
                     <Td>{l.application_reference ? <Link href={`/applications/${l.application_reference}`} className="font-mono text-xs text-primary hover:underline">{l.application_reference}</Link> : <span className="text-muted-foreground">—</span>}</Td>
                     <Td className="whitespace-nowrap text-[13px]" ><span title={formatDateTime(l.created_at)}>{timeAgo(l.sent_at ?? l.created_at)}</span></Td>
-                    {canRetry && <Td className="text-right">{(l.status === "dead" || l.status === "failed") && l.retryable ? <Button size="sm" variant="outline" onClick={() => doRetry(l)} loading={retry.isPending && retry.variables === l.id}><RotateCw className="size-4" />Retry</Button> : null}</Td>}
+                    {(canRetry || canDelete) && <Td className="text-right"><div className="flex justify-end gap-1.5">
+                      {canRetry && (l.status === "dead" || l.status === "failed") && l.retryable && <Button size="sm" variant="outline" onClick={() => doRetry(l)} loading={retry.isPending && retry.variables === l.id}><RotateCw className="size-4" />Retry</Button>}
+                      {canDelete && !["queued", "sending"].includes(l.status) && <Button size="icon-sm" variant="ghost" aria-label="Delete log" className="text-muted-foreground hover:text-danger" onClick={() => removeLog(l)}><Trash2 className="size-4" /></Button>}
+                    </div></Td>}
                   </Tr>))}</tbody>
               </Table></TableWrap>
               <Pagination pagination={data.pagination} onPage={(p) => set({ page: String(p) })} onPageSize={(n) => set({ page_size: String(n) })} />

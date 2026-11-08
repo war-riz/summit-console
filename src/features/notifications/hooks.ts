@@ -28,3 +28,13 @@ export function useMarkAllRead() {
   const qc = useQueryClient();
   return useMutation({ mutationFn: () => api.post("/admin/notifications/read-all"), onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }) });
 }
+
+export function useDeleteNotification() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => api.delete(`/admin/notifications/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }) });
+}
+
+export function useClearRead() {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: () => api.delete<{ deleted: number }>("/admin/notifications"), onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }) });
+}

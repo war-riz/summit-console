@@ -4,12 +4,14 @@ import * as React from "react";
 import { CircleCheck, OctagonAlert, TriangleAlert } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/input";
+import { Input, Textarea } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
 
 interface ConfirmOptions {
   title: string; description?: React.ReactNode; confirmLabel?: string; cancelLabel?: string; tone?: "default" | "danger" | "success" | "warning";
   note?: { label: string; placeholder?: string; required?: boolean; maxLength?: number };
+  /** The button stays disabled until the person types this text (use for permanent deletes). */
+  requireText?: { label: string; expected: string };
 }
 type Result = { confirmed: boolean; note?: string };
 type Confirm = (options: ConfirmOptions) => Promise<Result>;
@@ -26,10 +28,11 @@ export function useConfirm(): Confirm {
 export function ConfirmProvider({ children }: { children: React.ReactNode }) {
   const [opts, setOpts] = React.useState<ConfirmOptions | null>(null);
   const [note, setNote] = React.useState("");
+  const [typed, setTyped] = React.useState("");
   const resolver = React.useRef<((r: Result) => void) | null>(null);
 
   const confirm = React.useCallback<Confirm>((options) => new Promise<Result>((resolve) => {
-    resolver.current = resolve; setNote(""); setOpts(options);
+    resolver.current = resolve; setNote(""); setTyped(""); setOpts(options);
   }), []);
 
   const close = (confirmed: boolean) => {
@@ -39,6 +42,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
   const tone = opts?.tone ?? "default";
   const Icon = tone === "success" ? CircleCheck : tone === "danger" ? OctagonAlert : TriangleAlert;
   const needsNote = !!opts?.note?.required && !note.trim();
+  const needsText = !!opts?.requireText && typed.trim().toUpperCase() !== opts.requireText.expected.toUpperCase();
 
   return (
     <ConfirmContext.Provider value={confirm}>
@@ -46,11 +50,16 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
       <Modal open={!!opts} onOpenChange={(o) => !o && close(false)} title={opts?.title ?? ""} description={opts?.description} size="sm" icon={<Icon />}
         footer={<>
           <Button variant="outline" onClick={() => close(false)}>{opts?.cancelLabel ?? "Cancel"}</Button>
-          <Button variant={tone === "danger" ? "danger" : tone === "success" ? "success" : "primary"} disabled={needsNote} onClick={() => close(true)}>{opts?.confirmLabel ?? "Confirm"}</Button>
+          <Button variant={tone === "danger" ? "danger" : tone === "success" ? "success" : "primary"} disabled={needsNote || needsText} onClick={() => close(true)}>{opts?.confirmLabel ?? "Confirm"}</Button>
         </>}>
         {opts?.note && (
           <Field label={opts.note.label} htmlFor="confirm-note" hint={opts.note.required ? undefined : "Optional. Visible to administrators only."}>
             <Textarea id="confirm-note" autoFocus value={note} maxLength={opts.note.maxLength ?? 1000} onChange={(e) => setNote(e.target.value)} placeholder={opts.note.placeholder} />
+          </Field>
+        )}
+        {opts?.requireText && (
+          <Field label={opts.requireText.label} htmlFor="confirm-text" className="mt-4">
+            <Input id="confirm-text" autoFocus autoComplete="off" value={typed} onChange={(e) => setTyped(e.target.value)} />
           </Field>
         )}
       </Modal>

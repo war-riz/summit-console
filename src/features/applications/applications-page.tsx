@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Building2, CalendarDays, CheckCircle2, ChevronRight, Download, Lock, Search, SearchX, X, XCircle } from "lucide-react";
+import { Building2, CalendarDays, CheckCircle2, ChevronRight, Download, Lock, Search, SearchX, Trash2, X, XCircle } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableWrap, Td, Th, Tr } from "@/components/ui/table";
 import { Tabs } from "@/components/ui/tabs";
 import { CategoryBadge, EmailStateBadge, StatusBadge } from "./badges";
-import { useApplications, useBulkDecide } from "./hooks";
+import { useApplications, useBulkDecide, useBulkDelete } from "./hooks";
 import { useCan } from "@/hooks/use-me";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useUrlState } from "@/hooks/use-url-state";
@@ -35,6 +35,8 @@ export function ApplicationsPage() {
   const decide = useCan("applications:decide");
   const exporter = useCan("applications:export");
   const bulk = useBulkDecide();
+  const canDelete = useCan("data:delete").allowed;
+  const bulkDelete = useBulkDelete();
 
   const [search, setSearch] = React.useState(state.q);
   const [seenQ, setSeenQ] = React.useState(state.q);
@@ -67,6 +69,22 @@ export function ApplicationsPage() {
       const r = await bulk.mutateAsync({ references: refs, decision, note });
       if (r.failed.length === 0) toast.success(`${r.succeeded.length} application${r.succeeded.length === 1 ? "" : "s"} ${accept ? "accepted" : "rejected"}`);
       else toast.warning(`${r.succeeded.length} done, ${r.failed.length} skipped`, { description: r.failed.slice(0, 3).map((f) => `${f.reference}: ${f.message}`).join("\n"), duration: 9000 });
+      setSelected(new Set());
+    } catch (e) { toast.error((e as ApiError).message); }
+  };
+
+  const runDelete = async () => {
+    const refs = [...selected];
+    const { confirmed } = await confirm({
+      title: `Delete ${refs.length} application${refs.length === 1 ? "" : "s"} permanently?`, tone: "danger", confirmLabel: "Delete permanently",
+      description: "Their emails and notifications are removed too, and the email addresses can register again. This cannot be undone.",
+      requireText: { label: "Type DELETE to confirm", expected: "DELETE" },
+    });
+    if (!confirmed) return;
+    try {
+      const r = await bulkDelete.mutateAsync(refs);
+      if (r.failed.length === 0) toast.success(`${r.succeeded.length} application${r.succeeded.length === 1 ? "" : "s"} deleted`);
+      else toast.warning(`${r.succeeded.length} deleted, ${r.failed.length} skipped`, { description: r.failed.slice(0, 3).map((f) => `${f.reference}: ${f.message}`).join("\n") });
       setSelected(new Set());
     } catch (e) { toast.error((e as ApiError).message); }
   };
@@ -113,6 +131,7 @@ export function ApplicationsPage() {
             <div className="ml-auto flex gap-2">
               <Button size="sm" variant="success" loading={bulk.isPending} onClick={() => runBulk("accept")}><CheckCircle2 className="size-4" />Accept</Button>
               <Button size="sm" variant="danger" loading={bulk.isPending} onClick={() => runBulk("reject")}><XCircle className="size-4" />Reject</Button>
+              {canDelete && <Button size="sm" variant="outline" className="border-danger/40 text-danger hover:bg-danger-soft" loading={bulkDelete.isPending} onClick={runDelete}><Trash2 className="size-4" />Delete</Button>}
               <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>Cancel</Button>
             </div>
           </div>

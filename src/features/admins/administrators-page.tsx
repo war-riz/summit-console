@@ -7,7 +7,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Ban, CircleCheck, KeyRound, MoreHorizontal, Pencil, Plus, ShieldOff, UserPlus, Users } from "lucide-react";
+import { Ban, CircleCheck, KeyRound, MoreHorizontal, Pencil, Plus, ShieldOff, Trash2, UserPlus, Users } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Banner } from "@/components/ui/banner";
@@ -51,9 +51,19 @@ export function AdministratorsPage() {
   };
 
   const toggleActive = async (u: AdminUser) => {
-    const { confirmed } = await confirm({ title: `${u.is_active ? "Deactivate" : "Reactivate"} ${u.name}?`, tone: u.is_active ? "danger" : "success",
-      description: u.is_active ? "They are signed out everywhere and can no longer sign in." : "They will be able to sign in again.", confirmLabel: u.is_active ? "Deactivate" : "Reactivate" });
+    const { confirmed } = await confirm({
+      title: `${u.is_active ? "Deactivate" : "Reactivate"} ${u.name}?`, tone: u.is_active ? "danger" : "success",
+      description: u.is_active ? "They are signed out everywhere and can no longer sign in." : "They will be able to sign in again.", confirmLabel: u.is_active ? "Deactivate" : "Reactivate"
+    });
     if (confirmed) run(u.is_active ? "Administrator deactivated" : "Administrator reactivated", () => api.patch(`/admin/users/${u.id}`, { is_active: !u.is_active }));
+  };
+  const remove = async (u: AdminUser) => {
+    const { confirmed } = await confirm({
+      title: `Delete ${u.name} permanently?`, tone: "danger", confirmLabel: "Delete permanently",
+      description: "Their account, sessions and notifications are removed. Audit history is kept. To only block sign-in, use Deactivate instead.",
+      requireText: { label: `Type ${u.email} to confirm`, expected: u.email },
+    });
+    if (confirmed) run("Administrator deleted", () => api.delete(`/admin/users/${u.id}`));
   };
   const reset2fa = async (u: AdminUser) => {
     const { confirmed } = await confirm({ title: `Reset two-factor for ${u.name}?`, tone: "warning", description: "Use this when they lost their phone and have no backup codes. They are signed out and set up 2FA again at their next sign-in.", confirmLabel: "Reset 2FA" });
@@ -81,29 +91,30 @@ export function AdministratorsPage() {
       <Card>
         {isLoading ? <div className="space-y-2 p-4">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14" />)}</div>
           : !data?.length ? <EmptyState icon={<Users />} title="No administrators" />
-          : <TableWrap><Table>
-            <thead><tr><Th>Administrator</Th><Th>Role</Th><Th>Status</Th><Th>Two-factor</Th><Th>Last sign-in</Th><Th className="w-10"><span className="sr-only">Actions</span></Th></tr></thead>
-            <tbody>{data.map((u) => (
-              <Tr key={u.id}>
-                <Td><div className="flex items-center gap-3"><Avatar name={u.name} /><div className="min-w-0"><p className="truncate font-medium">{u.name}{u.id === me?.id && <span className="ml-2 text-xs font-normal text-muted-foreground">(you)</span>}</p><p className="truncate text-xs text-muted-foreground">{u.email}</p></div></div></Td>
-                <Td><Badge tone={roleTone[u.role]}>{u.role.replace("_", " ")}</Badge></Td>
-                <Td>{u.is_active ? <Badge tone="success" dot>Active</Badge> : <Badge tone="neutral" dot>Inactive</Badge>}{u.must_change_password && <p className="mt-1 text-[11px] text-warning">Temporary password</p>}</Td>
-                <Td>{u.mfa_enabled ? <Badge tone="success"><CircleCheck className="size-3" />Enabled</Badge> : <><Badge tone="warning"><ShieldOff className="size-3" />Not set up</Badge>{u.mfa_required_by && <p className="mt-1 text-[11px] text-muted-foreground">Required by {formatDate(u.mfa_required_by)}</p>}</>}</Td>
-                <Td className="whitespace-nowrap text-[13px] text-muted-foreground" title={formatDateTime(u.last_login_at)}>{u.last_login_at ? timeAgo(u.last_login_at) : "Never"}</Td>
-                <Td>
-                  <DropdownMenu><DropdownTrigger asChild><Button variant="ghost" size="icon-sm" aria-label={`Actions for ${u.name}`}><MoreHorizontal className="size-4" /></Button></DropdownTrigger>
-                    <DropdownContent>
-                      <DropdownItem onSelect={() => setDialog({ mode: "edit", user: u })}><Pencil />Edit name or role</DropdownItem>
-                      {u.id !== me?.id && <>
-                        <DropdownItem onSelect={() => issuePassword(u)}><KeyRound />Send new password</DropdownItem>
-                        <DropdownItem onSelect={() => reset2fa(u)} disabled={!u.mfa_enabled}><ShieldOff />Reset 2FA</DropdownItem>
-                        <DropdownSeparator />
-                        <DropdownItem danger={u.is_active} onSelect={() => toggleActive(u)}>{u.is_active ? <Ban /> : <CircleCheck />}{u.is_active ? "Deactivate" : "Reactivate"}</DropdownItem>
-                      </>}
-                    </DropdownContent></DropdownMenu>
-                </Td>
-              </Tr>))}</tbody>
-          </Table></TableWrap>}
+            : <TableWrap><Table>
+              <thead><tr><Th>Administrator</Th><Th>Role</Th><Th>Status</Th><Th>Two-factor</Th><Th>Last sign-in</Th><Th className="w-10"><span className="sr-only">Actions</span></Th></tr></thead>
+              <tbody>{data.map((u) => (
+                <Tr key={u.id}>
+                  <Td><div className="flex items-center gap-3"><Avatar name={u.name} /><div className="min-w-0"><p className="truncate font-medium">{u.name}{u.id === me?.id && <span className="ml-2 text-xs font-normal text-muted-foreground">(you)</span>}</p><p className="truncate text-xs text-muted-foreground">{u.email}</p></div></div></Td>
+                  <Td><Badge tone={roleTone[u.role]}>{u.role.replace("_", " ")}</Badge></Td>
+                  <Td>{u.is_active ? <Badge tone="success" dot>Active</Badge> : <Badge tone="neutral" dot>Inactive</Badge>}{u.must_change_password && <p className="mt-1 text-[11px] text-warning">Temporary password</p>}</Td>
+                  <Td>{u.mfa_enabled ? <Badge tone="success"><CircleCheck className="size-3" />Enabled</Badge> : <><Badge tone="warning"><ShieldOff className="size-3" />Not set up</Badge>{u.mfa_required_by && <p className="mt-1 text-[11px] text-muted-foreground">Required by {formatDate(u.mfa_required_by)}</p>}</>}</Td>
+                  <Td className="whitespace-nowrap text-[13px] text-muted-foreground" title={formatDateTime(u.last_login_at)}>{u.last_login_at ? timeAgo(u.last_login_at) : "Never"}</Td>
+                  <Td>
+                    <DropdownMenu><DropdownTrigger asChild><Button variant="ghost" size="icon-sm" aria-label={`Actions for ${u.name}`}><MoreHorizontal className="size-4" /></Button></DropdownTrigger>
+                      <DropdownContent>
+                        <DropdownItem onSelect={() => setDialog({ mode: "edit", user: u })}><Pencil />Edit name or role</DropdownItem>
+                        {u.id !== me?.id && <>
+                          <DropdownItem onSelect={() => issuePassword(u)}><KeyRound />Send new password</DropdownItem>
+                          <DropdownItem onSelect={() => reset2fa(u)} disabled={!u.mfa_enabled}><ShieldOff />Reset 2FA</DropdownItem>
+                          <DropdownSeparator />
+                          <DropdownItem danger={u.is_active} onSelect={() => toggleActive(u)}>{u.is_active ? <Ban /> : <CircleCheck />}{u.is_active ? "Deactivate" : "Reactivate"}</DropdownItem>
+                          <DropdownItem danger onSelect={() => remove(u)}><Trash2 />Delete permanently</DropdownItem>
+                        </>}
+                      </DropdownContent></DropdownMenu>
+                  </Td>
+                </Tr>))}</tbody>
+            </Table></TableWrap>}
       </Card>
       <AdminDialog state={dialog} onClose={() => setDialog(null)} onSaved={refresh} />
     </>

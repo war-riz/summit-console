@@ -60,3 +60,13 @@ export function useAddNote(reference: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.application(reference) }),
   });
 }
+
+export function useDeleteApplication() {
+  const refresh = useRefresh();
+  return useMutation({ mutationFn: (reference: string) => api.delete(`/admin/applications/${reference}`), onSuccess: refresh });
+}
+
+export function useBulkDelete() {
+  const refresh = useRefresh();
+  return useMutation({ mutationFn: (references: string[]) => api.post<BulkResult>("/admin/applications/bulk-delete", { references }), onSuccess: refresh });
+}

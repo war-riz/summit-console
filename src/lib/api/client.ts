@@ -70,7 +70,7 @@ export const api = {
     call<T[]>("GET", path, { query, signal }).then((r) => ({ items: r.data, pagination: r.pagination! })),
   post: <T>(path: string, body?: unknown, headers?: Record<string, string>) => call<T>("POST", path, { body: body ?? {}, headers }).then((r) => r.data),
   patch: <T>(path: string, body?: unknown) => call<T>("PATCH", path, { body: body ?? {} }).then((r) => r.data),
-  delete: <T>(path: string) => call<T>("DELETE", path).then((r) => r.data),
+  delete: <T>(path: string, query?: Query) => call<T>("DELETE", path, { query }).then((r) => r.data),
   /** Download a file (e.g. the CSV export) through the authenticated proxy. */
   async download(path: string, query: Query | undefined, filename: string) {
     const res = await fetch(`/api/proxy${path}${qs(query)}`, { credentials: "same-origin", cache: "no-store" });

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Building2, CheckCircle2, ExternalLink, FileSearch, Globe, Mail, MapPin, Phone, QrCode, RotateCw, Send, StickyNote, User, XCircle } from "lucide-react";
+import { Building2, CheckCircle2, ExternalLink, FileSearch, Globe, Mail, MapPin, Phone, QrCode, RotateCw, Send, StickyNote, Trash2, User, XCircle } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Banner } from "@/components/ui/banner";
@@ -15,7 +15,7 @@ import { CopyButton } from "@/components/ui/copy-button";
 import { Textarea } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CategoryBadge, EmailStateBadge, StatusBadge } from "./badges";
-import { useAddNote, useApplication, useApplicationEmails, useApplicationTimeline, useDecide } from "./hooks";
+import { useAddNote, useApplication, useApplicationEmails, useApplicationTimeline, useDecide, useDeleteApplication } from "./hooks";
 import { describeAudit } from "@/features/audit/describe";
 import { useCan } from "@/hooks/use-me";
 import { useConfirm } from "@/providers/confirm-provider";
@@ -45,6 +45,8 @@ export function ApplicationDetailView({ reference }: { reference: string }) {
   const canRetry = useCan("email_logs:retry").allowed;
   const canDecide = useCan("applications:decide").allowed;
   const decide = useDecide(reference);
+  const canDelete = useCan("data:delete").allowed;
+  const del = useDeleteApplication();
 
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-28" /><div className="grid gap-4 lg:grid-cols-3"><Skeleton className="h-96 lg:col-span-2" /><Skeleton className="h-96" /></div></div>;
   if (error || !app) {
@@ -68,6 +70,16 @@ export function ApplicationDetailView({ reference }: { reference: string }) {
     }
   };
 
+  const remove = async () => {
+    const { confirmed } = await confirm({
+      title: `Delete ${app.applicant_name} permanently?`, tone: "danger", confirmLabel: "Delete permanently",
+      description: "This removes the application, its emails and notifications for good. The applicant's email address can register again. This cannot be undone.",
+      requireText: { label: `Type ${app.reference} to confirm`, expected: app.reference },
+    });
+    if (!confirmed) return;
+    try { await del.mutateAsync(app.reference); toast.success("Application deleted"); router.replace("/applications"); } catch (e) { toast.error((e as ApiError).message); }
+  };
+
   const isSponsor = app.category === "sponsor";
   return (
     <>
@@ -84,8 +96,9 @@ export function ApplicationDetailView({ reference }: { reference: string }) {
               <p className="mt-2 text-xs text-muted-foreground">Submitted {formatDateTime(app.submitted_at)} · {timeAgo(app.submitted_at)}</p>
             </div>
           </div>
-          {app.available_actions.length > 0 && (
+          {(app.available_actions.length > 0 || canDelete) && (
             <div className="flex shrink-0 flex-wrap gap-2">
+              {canDelete && <Button variant="ghost" className="text-danger hover:bg-danger-soft" loading={del.isPending} onClick={remove}><Trash2 className="size-4" />Delete</Button>}
               {app.available_actions.includes("reject") && <Button variant="outline" className="border-danger/40 text-danger hover:bg-danger-soft" loading={decide.isPending} onClick={() => act("reject")}><XCircle className="size-4" />Reject</Button>}
               {app.available_actions.includes("accept") && <Button variant="success" loading={decide.isPending} onClick={() => act("accept")}><CheckCircle2 className="size-4" />Accept</Button>}
             </div>
@@ -198,9 +211,11 @@ function Timeline({ reference }: { reference: string }) {
       <CardContent>
         {isLoading ? <Skeleton className="h-32" /> : events.length === 0 ? <p className="text-[13px] text-muted-foreground">No activity recorded.</p> : (
           <ol className="relative space-y-4 before:absolute before:bottom-2 before:left-4 before:top-2 before:w-px before:bg-border">
-            {events.map((e) => { const { Icon, tone, text } = describeAudit(e); return (
-              <li key={e.id} className="relative flex gap-3"><span className={cn("relative z-10 grid size-8 shrink-0 place-items-center rounded-full ring-4 ring-card", toneCls[tone])}><Icon className="size-4" /></span>
-                <div className="min-w-0 pt-0.5"><p className="text-[13px] leading-snug">{text}</p><p className="text-[11px] text-muted-foreground" title={formatDateTime(e.created_at)}>{timeAgo(e.created_at)}</p></div></li>); })}
+            {events.map((e) => {
+              const { Icon, tone, text } = describeAudit(e); return (
+                <li key={e.id} className="relative flex gap-3"><span className={cn("relative z-10 grid size-8 shrink-0 place-items-center rounded-full ring-4 ring-card", toneCls[tone])}><Icon className="size-4" /></span>
+                  <div className="min-w-0 pt-0.5"><p className="text-[13px] leading-snug">{text}</p><p className="text-[11px] text-muted-foreground" title={formatDateTime(e.created_at)}>{timeAgo(e.created_at)}</p></div></li>);
+            })}
           </ol>
         )}
       </CardContent></Card>
