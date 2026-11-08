@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Building2, CalendarDays, CheckCircle2, ChevronRight, Download, Lock, Search, SearchX, Trash2, X, XCircle } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Banner } from "@/components/ui/banner";
+import { BulkBar } from "@/components/ui/bulk-bar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -125,17 +126,6 @@ export function ApplicationsPage() {
       {isError && <Banner tone="danger" className="mb-4" title="Couldn't load applications" action={<Button variant="outline" size="sm" onClick={() => refetch()}>Retry</Button>}>{(error as ApiError)?.message}</Banner>}
 
       <Card className={isFetching && !isLoading ? "opacity-80 transition-opacity" : "transition-opacity"}>
-        {selected.size > 0 && decide.allowed && (
-          <div className="sticky top-16 z-10 flex flex-wrap items-center gap-3 border-b border-primary/20 bg-accent px-4 py-2.5 animate-fade-in">
-            <p className="text-sm font-medium text-accent-foreground">{selected.size} selected</p>
-            <div className="ml-auto flex gap-2">
-              <Button size="sm" variant="success" loading={bulk.isPending} onClick={() => runBulk("accept")}><CheckCircle2 className="size-4" />Accept</Button>
-              <Button size="sm" variant="danger" loading={bulk.isPending} onClick={() => runBulk("reject")}><XCircle className="size-4" />Reject</Button>
-              {canDelete && <Button size="sm" variant="outline" className="border-danger/40 text-danger hover:bg-danger-soft" loading={bulkDelete.isPending} onClick={runDelete}><Trash2 className="size-4" />Delete</Button>}
-              <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>Cancel</Button>
-            </div>
-          </div>
-        )}
         {isLoading ? (
           <div className="space-y-2 p-4">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-14" />)}</div>
         ) : items.length === 0 ? (
@@ -169,6 +159,15 @@ export function ApplicationsPage() {
           </>
         )}
       </Card>
+      {selected.size > 0 && <div className="h-24" aria-hidden />}
+
+      {decide.allowed && (
+        <BulkBar count={selected.size} onCancel={() => setSelected(new Set())}>
+          <Button size="sm" variant="success" loading={bulk.isPending} onClick={() => runBulk("accept")}><CheckCircle2 className="size-4" />Accept</Button>
+          <Button size="sm" variant="danger" loading={bulk.isPending} onClick={() => runBulk("reject")}><XCircle className="size-4" />Reject</Button>
+          {canDelete && <Button size="sm" variant="outline" className="border-danger/40 text-danger hover:bg-danger-soft" loading={bulkDelete.isPending} onClick={runDelete}><Trash2 className="size-4" />Delete</Button>}
+        </BulkBar>
+      )}
     </>
   );
 }
